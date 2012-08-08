@@ -1,13 +1,17 @@
 #include "../inc/stdafx.h"
-
 #include <boost/program_options.hpp>
 
+#include <QtCore/QProcess>
+#include <QtCore/QStringListIterator>
+
+#include <string>
 #include <iostream>
 
 
 bool extract_cl_variables(int argc, char* argv[], boost::program_options::variables_map& r_vm);
+bool process_git_output  (const QString& a_git_output);
 
-int _tmain(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     namespace po = boost::program_options;
 
@@ -16,12 +20,33 @@ int _tmain(int argc, char* argv[])
     if(!extract_cl_variables(argc, argv, vm))
         return -1;
 
-    if (vm.count("compression")) 
-        std::cout << "Compression level was set to " << vm["compression"].as<int>() << std::endl;
-    else
-        std::cout << "Compression level was not set." << std::endl;
+    if (!vm.count("pdir"))
+    {
+        std::cout << "The GIT repository's dir was not set." << std::endl;
+        return -1;
+    }
 
-	return 0;
+    std::string wdir = vm["pdir"].as<std::string>();
+
+    std::cout << "The GIT repository's dir is " << wdir << std::endl;
+
+    QProcess proc;
+
+    QStringList arguments;
+    {
+        arguments.push_back("log");
+        arguments.push_back("-2");
+        arguments.push_back("--all");
+        arguments.push_back("--date-order");
+    }
+    proc.setWorkingDirectory(QString::fromStdString(wdir));
+    proc.start("git", arguments);
+
+    proc.waitForFinished();
+
+    process_git_output(proc.readAllStandardOutput());
+
+    return 0;
 }
 
 
@@ -33,7 +58,7 @@ bool extract_cl_variables(int argc, char* argv[], boost::program_options::variab
 
     desc.add_options()
         ("help", "produce help message")
-        ("compression", po::value<int>(), "set compression level")
+        ("pdir", po::value<std::string>(), "A project's directory of the GDK's repository.")
         ;
 
     po::store (po::parse_command_line(argc, argv, desc), r_vm);
@@ -44,6 +69,49 @@ bool extract_cl_variables(int argc, char* argv[], boost::program_options::variab
         std::cout << desc << std::endl;
 
         return false;
+    }
+
+    return true;
+}
+
+
+
+bool process_git_output( const QString& a_git_output )
+{
+    if(a_git_output.isEmpty())
+        return false;
+    // [0] |commit 43f19cdfb9c09e4ea144ebf957f2500634489f9e
+    // [1] |Author: einsiedler <a.bondarenko@codetiburon.com>
+    // [2] |Date:   Fri Jul 20 18:31:04 2012 +0300
+    QStringList list = a_git_output.split("\n");
+
+    //QStringListIterator list_iter(list);
+    /*
+    while(list_iter)
+    {
+
+        ++list_iter;
+    }
+
+    list.clear();
+    */
+                                           
+    int index_of = list.indexOf(QRegExp("\\b(Date|date)\\b", Qt::CaseInsensitive));
+    if(-1 != index_of)
+    {
+        ;
+    }
+
+    index_of = list.indexOf(QRegExp("[Author:]", Qt::CaseInsensitive));
+    if(-1 != index_of)
+    {
+        ;
+    }
+
+    index_of = list.indexOf(QRegExp("[commit ]", Qt::CaseInsensitive));
+    if(-1 != index_of)
+    {
+        ;
     }
 
     return true;
