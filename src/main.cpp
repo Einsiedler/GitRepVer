@@ -3,6 +3,7 @@
 
 #include <QtCore/QProcess>
 #include <QtCore/QStringListIterator>
+#include <QtCore/QDateTime>
 
 #include <string>
 #include <iostream>
@@ -35,7 +36,7 @@ int main(int argc, char *argv[])
     QStringList arguments;
     {
         arguments.push_back("log");
-        arguments.push_back("-2");
+        arguments.push_back("-1");
         arguments.push_back("--all");
         arguments.push_back("--date-order");
     }
@@ -80,38 +81,33 @@ bool process_git_output( const QString& a_git_output )
 {
     if(a_git_output.isEmpty())
         return false;
-    // [0] |commit 43f19cdfb9c09e4ea144ebf957f2500634489f9e
-    // [1] |Author: einsiedler <a.bondarenko@codetiburon.com>
-    // [2] |Date:   Fri Jul 20 18:31:04 2012 +0300
+    
+    long long   comm_time_utc = 0;
+    std::string comm_author   = "undetermined";
+    std::string comm_hash     = "undetermined";
+
     QStringList list = a_git_output.split("\n");
-
-    //QStringListIterator list_iter(list);
-    /*
-    while(list_iter)
+    foreach (const QString &str, list) 
     {
-
-        ++list_iter;
-    }
-
-    list.clear();
-    */
-                                           
-    int index_of = list.indexOf(QRegExp("\\b(Date|date)\\b", Qt::CaseInsensitive));
-    if(-1 != index_of)
-    {
-        ;
-    }
-
-    index_of = list.indexOf(QRegExp("[Author:]", Qt::CaseInsensitive));
-    if(-1 != index_of)
-    {
-        ;
-    }
-
-    index_of = list.indexOf(QRegExp("[commit ]", Qt::CaseInsensitive));
-    if(-1 != index_of)
-    {
-        ;
+        if(str.contains("Date:"))
+        { // [2] |Date:   Fri Jul 20 18:31:04 2012 +0300
+            QDateTime dt = QDateTime::fromString( str.mid(strlen("Date:"), (str.length() - strlen("Date:") - strlen("+0000"))).simplified(), "ddd MMM dd hh:mm:ss yyyy");
+            /* // Code for testing a parser.
+            int i_day_of_week = dt.date().dayOfWeek();
+            int i_day         = dt.date().day();
+            int i_month       = dt.date().month();
+            int i_year        = dt.date().year();
+            */
+            comm_time_utc = dt.toMSecsSinceEpoch();
+        }
+        else if(str.contains("Author:"))
+        { // [1] |Author: einsiedler <a.bondarenko@codetiburon.com>
+            comm_author = str.mid(strlen("Author:"), str.indexOf("<") - strlen("Author:")).simplified().toStdString();
+        }
+        else if(str.contains("commit "))
+        { // [0] |commit 43f19cdfb9c09e4ea144ebf957f2500634489f9e
+            comm_hash = str.mid(strlen("commit ")).simplified().toStdString();
+        }
     }
 
     return true;
