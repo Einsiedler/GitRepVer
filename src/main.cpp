@@ -38,6 +38,21 @@ int main(int argc, char *argv[])
         std::cout << "The output header file was not set." << std::endl;
         return -3;
     }
+    if (!vm.count("ver_major"))
+    {
+        std::cout << "The major version of a product was not set." << std::endl;
+        return -4;
+    }
+    if (!vm.count("ver_minor"))
+    {
+        std::cout << "The minor version of a product was not set." << std::endl;
+        return -5;
+    }
+    if (!vm.count("ver_release"))
+    {
+        std::cout << "The release version of a product was not set." << std::endl;
+        return -6;
+    }
 
     std::string wdir = vm["pdir"].as<std::string>();
 
@@ -67,13 +82,13 @@ int main(int argc, char *argv[])
     QFile template_file(QString::fromStdString(vm["in_templ"].as<std::string>()));
 
     if(!template_file.open(QIODevice::ReadOnly))
-        return -4;
+        return -7;
 
     QString template_string(template_file.readAll());
     template_file.close();
 
     if(template_string.isEmpty())
-        return -5;
+        return -8;
 
     QString out_header_file_str;
 
@@ -92,16 +107,23 @@ int main(int argc, char *argv[])
     }
 
     if(out_header_file_str.isEmpty())
-        return -6;
+        return -9;
 
-    out_header_file_str = QString("#ifndef __%1_VERSION_H__\n#define __%1_VERSION_H__\n\n%2\n#define PROJECT_BUILD_TIMESTAMP %3\n\n#endif\n")
+    out_header_file_str = QString("#ifndef __%1_VERSION_H__\n#define __%1_VERSION_H__\n\n%2\n"
+                                  "#define PROJECT_BUILD_TIMESTAMP %3\n\n"
+                                  "#define PRODUCT_VERSION_MAJOR %4\n\n"
+                                  "#define PRODUCT_VERSION_MINOR %5\n\n"
+                                  "#define PRODUCT_VERSION_RELEASE %6\n\n"
+                                  "#define PRODUCT_VERSION_STRING \"%4.%5.%6.%7\"\n\n"
+                                  "#endif\n")
                                  .arg(QString::fromStdString(r_comm_author).toUpper())
                                  .arg(out_header_file_str)
-                                 .arg(QDateTime::currentMSecsSinceEpoch());
+                                 .arg(QDateTime::currentMSecsSinceEpoch())
+                                 .arg(vm["ver_major"].as<int>()).arg(vm["ver_minor"].as<int>()).arg(vm["ver_release"].as<int>()).arg(QString::number(commits_count));
 
     QFile out_headr_file(QString::fromStdString(vm["out_templ"].as<std::string>()));
     if(!out_headr_file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
-        return -7;
+        return -10;
 
     out_headr_file.write(out_header_file_str.toUtf8());
     out_headr_file.close();
@@ -117,10 +139,13 @@ bool extract_cl_variables(int argc, char* argv[], boost::program_options::variab
     po::options_description desc("Allowed options");
 
     desc.add_options()
-        ("help"     , "produce help message")
-        ("pdir"     , po::value<std::string>(), "A project's directory of the GDK's repository.")
-        ("in_templ" , po::value<std::string>(), "A path to the template file.")
-        ("out_templ", po::value<std::string>(), "A path to the output header file.")
+        ("help"       , "produce help message")
+        ("pdir"       , po::value<std::string>(), "A project's directory of the GDK's repository.")
+        ("in_templ"   , po::value<std::string>(), "A path to the template file.")
+        ("out_templ"  , po::value<std::string>(), "A path to the output header file.")
+        ("ver_major"  , po::value<int>(), "A major number of version.")
+        ("ver_minor"  , po::value<int>(), "A minor number of version.")
+        ("ver_release", po::value<int>(), "A release number of version.")
         ;
 
     po::store (po::parse_command_line(argc, argv, desc), r_vm);

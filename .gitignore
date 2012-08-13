@@ -2,3 +2,5 @@
 build/msvc/bin
 build/msvc/GitRepVerGetter.vcxproj.user
 build/msvc/GitRepVerGetter.suo
+build/msvc/GitRepVer.vcxproj.user
+build/msvc/GitRepVer.suo
