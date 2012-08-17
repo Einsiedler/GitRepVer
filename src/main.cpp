@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
                                   "#define PRODUCT_VERSION_RELEASE %6\n\n"
                                   "#define PRODUCT_VERSION_STRING \"%4.%5.%6.%7\"\n\n"
                                   "#endif\n")
-                                 .arg(QString::fromStdString(r_comm_author).toUpper())
+                                 .arg(QString::fromStdString(r_comm_author).replace(' ', '_').toUpper())
                                  .arg(out_header_file_str)
                                  .arg(QDateTime::currentMSecsSinceEpoch())
                                  .arg(vm["ver_major"].as<int>()).arg(vm["ver_minor"].as<int>()).arg(vm["ver_release"].as<int>()).arg(QString::number(commits_count));
